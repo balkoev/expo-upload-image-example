@@ -5,12 +5,14 @@ import {
   Button, Image, StyleSheet, Text, View,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { Camera } from 'expo-camera';
 
 export default function App() {
   const [image, setImage] = useState();
+  const [permission, requestPermission] = Camera.useCameraPermissions();
 
   async function uploadImageAsync(uri) {
-    const apiUrl = 'http://localhost:3000/upload';
+    const apiUrl = 'http://localhost:3000/upload'; // Add your local IP address
     const uriParts = uri.split('.');
     const fileType = uriParts[uriParts.length - 1];
 
@@ -52,6 +54,25 @@ export default function App() {
     }
   };
 
+  const takePhoto = async () => {
+    await requestPermission();
+    if (permission.status === 'granted') {
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [4, 3],
+      });
+
+      if (!result.canceled) {
+        setImage(result.assets[0].uri);
+        try {
+          await uploadImageAsync(result.assets[0].uri);
+        } catch (err) {
+          console.log(err);
+        }
+      }
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Text>Upload application example</Text>
@@ -59,6 +80,8 @@ export default function App() {
         onPress={pickImage}
         title="Pick an image from camera roll"
       />
+      <Button onPress={takePhoto} title="Take a photo drom camera" />
+
       {image && <Image source={{ uri: image }} style={{ width: 200, height: 200 }} />}
 
     </View>
